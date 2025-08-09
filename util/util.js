@@ -1,23 +1,26 @@
-const db=require('../db')
+const dayjs = require("dayjs")
 
-const get = async (req, res) => {
-    console.log("called");
-    const { tableName } = req.body;
-  
-    // Validate and sanitize tableName
-    if (!/^[a-zA-Z0-9_]+$/.test(tableName)) {
-      return res.status(400).send("Invalid table name");
-    }
-  
-    let sql_query = `SELECT * FROM ??`;
-    await db.query(sql_query, [tableName], (err, result) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).send("Database query failed");
-      }
-      res.send(result);
-      // console.log(result);
-    });
-  };
+const getFormatedDate = (date) => {
+   const formatedDate = dayjs(date).format('YYYY-MM-DD HH:mm:ss');
+   console.log(formatedDate);
+    return formatedDate;
+}
 
-  exports.get=get;
+const getAppErrorResult = (err) => {
+    return {success:false,statusCode:err.statusCode,message:err.message};
+}
+
+const getInternalErrorResult = () => {
+    return {success:false,statusCode:500,message:'something went wrong'}
+
+}
+
+const getErrorResponse = (res,errorResult) => {
+    return res.status(errorResult.statusCode).json({message:errorResult.message});
+}
+module.exports = {
+    getFormatedDate,
+    getAppErrorResult,
+    getInternalErrorResult,
+    getErrorResponse
+}

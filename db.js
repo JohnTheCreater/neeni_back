@@ -1,9 +1,17 @@
-const mysql=require('mysql2')
-const util=require('util')
+const mysql = require("mysql2/promise");
+require('dotenv').config();
 
-const pool=mysql.createPool({host:'localhost',user:'root',password:'john',database:'neeni',port:3306})
 
-pool.query=util.promisify(pool.query)
+const { DBHOST, DBUSER, DBPASSWORD, DBNAME, DBPORT } = process.env;
 
-module.exports=pool
+const pool = mysql.createPool({
+  host: DBHOST,
+  user: DBUSER,
+  password: DBPASSWORD,
+  database: DBNAME,
+  port: DBPORT,
+});
 
+
+
+module.exports = pool;

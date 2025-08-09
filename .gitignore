@@ -1,4 +1,5 @@
 
-
+others
 node_modules
 *.sql
+tables.txt
