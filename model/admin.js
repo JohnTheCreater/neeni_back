@@ -9,13 +9,7 @@ const getAdminByUsername = async (username, connection = db) => {
     );
     return result[0];
 };
-const getAdminByRefreshToken = async (refreshToken, connection = db) => {
-    const [result] = await connection.query(
-        "select id, username from admin where refresh_token = ?", 
-        [refreshToken]
-    );
-    return result[0];
-};
+
 
 
 const updateAdminCredentials = async (username, hashedPassword, connection = db) => {
@@ -28,20 +22,13 @@ const updateAdminCredentials = async (username, hashedPassword, connection = db)
 };
 
 
-const updateLoginInfo = async (username,connection = db)=>{
-    const query = `UPDATE admin SET  last_login_at = ? WHERE username = ?`;
-    return await connection.query(query, [
-        getFormatedDate(new Date()), 
-        username
-    ]);
 
-}
 
 
 
 
 const updateRefreshToken = async (username, refreshToken, connection = db) => {
-    const query = `UPDATE admin SET refresh_token = ?, last_active_at = ? WHERE username = ?`;
+    const query = `UPDATE admin SET refresh_token = ?,last_login_at = ? WHERE username = ?`;
     return await connection.query(query, [
         refreshToken, 
         getFormatedDate(new Date()), 
@@ -51,10 +38,8 @@ const updateRefreshToken = async (username, refreshToken, connection = db) => {
 
 module.exports = {
     getAdminByUsername,
-    getAdminByRefreshToken,
     updateAdminCredentials,
-    updateRefreshToken,
-    updateLoginInfo
+    updateRefreshToken
 };
 
 

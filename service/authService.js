@@ -5,6 +5,7 @@ const AppError = require('../error/appError');
 const { getAppErrorResult, getInternalErrorResult } = require('../util/util');
 
 const authenticateUser = async (username, password) => {
+
     try {
         const admin = await adminModel.getAdminByUsername(username);
         
@@ -20,9 +21,9 @@ const authenticateUser = async (username, password) => {
 
         const accessToken = generateAccessToken(admin.id, admin.username);
         const refreshToken = generateRefreshToken(admin.id, admin.username);
-
-        await adminModel.updateRefreshToken(username, refreshToken);
-        await adminModel.updateLoginInfo(username);
+        
+        const hashedRefreshToken = await bcrypt.hash(refreshToken,10);
+        await adminModel.updateRefreshToken(username, hashedRefreshToken);
 
         return {
             success: true,
@@ -40,31 +41,56 @@ const refreshAccessToken = async (refreshToken) => {
     try {
         const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET_KEY);
         
-        const admin = await adminModel.getAdminByRefreshToken(refreshToken);
+        const admin = await adminModel.getAdminByUsername(decoded.username);
         
         if (!admin) {
-           throw new AppError('No account found for this token!','INVALID_TOKEN',404);
+           throw new AppError('No account found for this token!','INVALID_TOKEN',401);
+        }
+        const isActiveSession = await bcrypt.compare(refreshToken,admin.refresh_token);
+        if(!isActiveSession)
+        {
+            throw new AppError('Session Expired!','INVALID_SESSION',401);
         }
 
         const newAccessToken =  generateAccessToken(admin.id, admin.username);
-        
-        const newRefreshToken = generateRefreshToken(admin.id, admin.username);
-        await adminModel.updateRefreshToken(admin.username, newRefreshToken);
-
+         
+       
         return {
             success: true,
-            data: { 
-                accessToken: newAccessToken,
-                newRefreshToken: newRefreshToken 
-            }
+            accessToken: newAccessToken,
         };
 
     } catch (err) {
-        if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
-            return { success: false,statusCode:404, message: 'Invalid or expired refresh token' };
+        
+        if (err.name === 'JsonWebTokenError') {
+            return { 
+                success: false, 
+                statusCode: 401, 
+                errorCode: 'INVALID_TOKEN',
+                message: 'Invalid refresh token' 
+            };
         }
-        if(err instanceof AppError)
-                return  getAppErrorResult(err);
+        
+        if (err.name === 'TokenExpiredError') {
+            return { 
+                success: false, 
+                statusCode: 401, 
+                errorCode: 'TOKEN_EXPIRED',
+                message: 'Your session has expired. Please log in again.' 
+            };
+        }
+        
+        if(err instanceof AppError) {
+            const result = getAppErrorResult(err);
+            if (err.code === 'INVALID_SESSION') {
+                result.errorCode = 'SESSION_EXPIRED_ELSEWHERE';
+                result.message = 'You have been logged out because this account was accessed from another device.';
+            } else if (err.code === 'INVALID_TOKEN') {
+                result.errorCode = 'USER_NOT_FOUND';
+            }
+            return result;
+        }
+        
         console.error('Refresh token error:', err);
         return  getInternalErrorResult();
     }
@@ -95,7 +121,7 @@ const changePassword = async (username, newPassword) => {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         await adminModel.updateAdminCredentials(username, hashedPassword);
         
-        await adminModel.removeAllRefreshTokensForUser(username);
+      
         
         return { success: true, message: 'Password Changed!' };
     } catch (error) {
