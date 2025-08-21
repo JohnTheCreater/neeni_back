@@ -363,7 +363,7 @@ const sendBill = async(billNumber) => {
     const composeMail = {
       from: process.env.ADMIN_GMAIL,
       to: invoice.customer.email,
-      subject: `The bill for purchase on ${dayjs(bill.date).format(
+      subject: `Your Bill For The Purchase On ${dayjs(bill.date).format(
         "DD-MM-YYYY"
       )}`,
       attachments: [
