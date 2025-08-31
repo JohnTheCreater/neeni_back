@@ -42,15 +42,67 @@ const getBills = async ( req,res) => {
     return getErrorResponse(res,result);
 
 }
+const getActiveBills = async ( req,res) => {
 
-const getBillsByCustomerId = async(req,res) => {
 
-    const {customerId} = req.params;
-    const result = await billService.getBillsByCustomerId(customerId);
+    const result = await billService.getActiveBills();
     if(result.success) return res.status(200).json(result.data);
     return getErrorResponse(res,result);
 
 }
+
+const getActiveBillsPage = async(req,res)=>{
+
+    const limit = Number(req.query.limit) || 10;
+    const offset = req.query.page ? (Number(req.query.page)-1) * limit : 0;
+    const value = (req.query.value || "").trim();
+    const result = await billService.getActiveBillsPage(limit,offset,value);
+    if(result.success) return res.status(200).json(result.data);
+    return getErrorResponse(res,result);
+
+}
+
+const getBillsInRange = async (req,res) => {
+
+    const {month,year,shopId} = req.params;
+    const limit = Number(req.query.limit) || 10;
+    const offset = req.query.page ? (Number(req.query.page)-1) * limit : 0;
+    const startDate = new Date(Number(year), Number(month), 1);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(Number(year), Number(month) + 1, 0);
+    endDate.setHours(23, 59, 59, 999);
+    console.log(startDate)
+    console.log(endDate)
+    const result = await billService.getBillsInRange(startDate,endDate,limit,offset,shopId);
+
+    if(result.success) return res.status(200).json(result.data);
+    return getErrorResponse(res,result);
+
+}
+
+const getBillByBillNumber = async(req,res)=>{
+
+    const {billNumber} = req.params;
+    console.log(billNumber)
+    const result = await billService.getBillByBillNumber(Number(billNumber));
+    if(result.success) return res.status(200).json(result.data);
+    return getErrorResponse(res,result);
+}
+
+
+const getBillsByCustomerId = async(req,res) => {
+
+    const {customerId} = req.params;
+    const limit = Number(req.query.limit) || 10;
+    const offset = req.query.page ? (Number(req.query.page)-1) * limit : 0;
+    const result = await billService.getBillsByCustomerIdPage(customerId,limit,offset);
+    if(result.success) return res.status(200).json(result.data);
+    return getErrorResponse(res,result);
+
+
+}
+
 
 const downloadBill = async(req,res)=>{
     try {
@@ -117,13 +169,6 @@ const getNextBillNumber = async(req,res)=>{
 
 }
 
-const getPaymentInfoForMonth = async(req,res)=>{
-    const {date} = req.params;
-    const result = await billService.getPaymentInfoForMonth(date);
-    if(result.success) return res.status(200).json(result.data);
-    return getErrorResponse(res,result);
-
-}
 
 
 module.exports = {
@@ -134,7 +179,11 @@ module.exports = {
     downloadBill,
     sendNotification,
     getBills,
+    getActiveBills,
+    getBillsInRange,
+    getActiveBillsPage,
+    getBillByBillNumber,
     getBillsByCustomerId,
     getNextBillNumber,
-    getPaymentInfoForMonth
+    
 }

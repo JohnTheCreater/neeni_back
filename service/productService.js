@@ -140,10 +140,12 @@ const activateProduct = async (inActiveProductId)  => {
     }
 }
 
-const getActiveProducts = async () => {
+const getActiveProducts = async (value) => {
+
+    
 
     try{
-        const data =  await productModel.getActiveProducts();
+        const data =  await productModel.getActiveProducts(value);
         return {success:true,data};
     }
     catch(err)
@@ -154,9 +156,9 @@ const getActiveProducts = async () => {
     }
 }
 
-const getInActiveProducts = async () => {
+const getInActiveProducts = async (value) => {
     try{
-        const data =  await productModel.getInActiveProducts();
+        const data =  await productModel.getInActiveProducts(value);
         return {success:true,data};
     }
     catch(err)

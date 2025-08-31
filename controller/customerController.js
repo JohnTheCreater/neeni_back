@@ -2,13 +2,13 @@
 const customerService = require('../service/customerService');
 const { getErrorResponse } = require('../util/util');
 
-const addCustomers = async (req,res) => {
+const addCustomer = async (req,res) => {
 
-    const {customerList} = req.body;
-    const result = await customerService.addCustomers(customerList);
+    const {customer} = req.body;
+    const result = await customerService.addCustomer(customer);
     if(result.success)
     {
-        return res.status(200).json({message:'All customers are added!'})
+        return res.status(200).json({message:'customer is added!'})
     }
  
     return getErrorResponse(res,result);
@@ -20,7 +20,6 @@ const updateCustomer = async (req,res) => {
 
     const {customer} = req.body;
     const {customerId} = req.params
-    console.log(customer,customerId);
     const result = await customerService.updateCustomer(customer,customerId);
     if(result.success)
     {
@@ -33,6 +32,7 @@ const updateCustomer = async (req,res) => {
 const removeCustomer = async (req,res) => {
     
     const {customerId} = req.params;
+    console.log(customerId)
     const result = await customerService.removeCustomer(customerId);
     if(result.success)
     {
@@ -46,7 +46,8 @@ const removeCustomer = async (req,res) => {
 
 const getCustomers = async (req,res) => {
 
-    const result = await customerService.getAllCustomers();
+    const value = (req.query.value || "").trim();
+    const result = await customerService.getCustomers(value);
     if(result.success)
     {
         return res.status(200).json(result.data);
@@ -55,12 +56,26 @@ const getCustomers = async (req,res) => {
     return getErrorResponse(res,result);
 
     
+}
 
+const getCustomersPageData = async(req,res) => {
+
+    const limit = Number(req.query.limit) || 10;
+    const offset = req.query.page ? (Number(req.query.page) - 1) * limit : 0;
+    const value = (req.query.value || "").trim();
+
+    const result = await customerService.getActiveCustomersWithPaymentInfo(limit,offset,value.trim());
+    if(result.success)
+    {
+        return res.status(200).json(result.data);
+    }
+    return getErrorResponse(res,result);
 }
 
 const getActiveCustomers = async (req,res) => {
 
-    const result = await customerService.getActiveCustomersWithPaymentInfo();
+    const value = (req.query.value || "").trim();
+    const result = await customerService.getActiveCustomers(value);
 
     if(result.success)
     {
@@ -86,11 +101,12 @@ const checkEmail = async(req,res) => {
 
 
 module.exports = { 
-    addCustomers,
+    addCustomer,
     updateCustomer,
     removeCustomer,
     getCustomers,
     getActiveCustomers,
+    getCustomersPageData,
     checkEmail
 
 }

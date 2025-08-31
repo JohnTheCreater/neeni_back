@@ -1,67 +1,138 @@
 const db = require('../db');
 
-const getCustomers = async(connection = db) => {
+const getCustomers = async (value,connection = db) => {
 
-   
-    const [rows] = await connection.query('select * from customers ');
+let sql_query = `select * from customers `
+    const p = [];
+    if(value && value != "")
+    {
+        sql_query += 'where name LIKE ?'
+        p.push(`%${value}%`);
+    }
+
+    const [rows] = await connection.query(sql_query,p);
     return rows;
 
 }
 
-const getAciveCustomers = async(connection = db) => {
+const getActiveCustomers = async (value,connection = db) => {
 
-   
-    const [rows] = await connection.query('select * from customers where is_active = 1');
+    let sql_query = `select * from customers where is_active = 1 `
+    const p = [];
+    if(value && value != "")
+    {
+        sql_query += 'AND name LIKE ?'
+        p.push(`%${value}%`);
+    }
+
+    const [rows] = await connection.query(sql_query,p);
     return rows;
 
 }
 
-const getInActiveCustomers = async(connection = db) => {
-     
+const getInActiveCustomers = async (connection = db) => {
+
     const [rows] = await connection.query('select * from customers where is_active = 0');
     return rows;
 
 }
 
-const getCustomersWithPaymentInfo = async(connection = db) =>
-{
-    let sql_query = `select id,name,email,mobileno,address,pincode,
-    IFNULL((select sum(remaining_amount)  from 
-    (select  bills.id,sum(bill_amount)-sum(paid_amount)-IFNULL((select sum(sub_total) from sales where bill_no = bills.id and paid_status = "paid"),0) 
-    as remaining_amount from bills where customer_id = customers.id group by bills.id) as rem),0) as unpaid ,
-    IFNULL((select sum(bill_amount) from bills where customer_id = customers.id),0) as bill_amount
-    from customers  WHERE  is_active = 1`;
-    const [result] = await connection.query(sql_query);
-    return result;
+const getCustomersWithPaymentInfo = async (limit, offset, value, connection = db) => {
+    let sql_query = `
+    SELECT id,name,email,mobileno,address,pincode,
+        IFNULL((
+            SELECT SUM(remaining_amount)  
+            FROM (
+                SELECT bills.id,
+                       SUM(bill_amount) - SUM(paid_amount) 
+                       - IFNULL((
+                            SELECT SUM(sub_total) 
+                            FROM sales 
+                            WHERE bill_no = bills.id 
+                              AND paid_status = "paid"
+                         ),0) AS remaining_amount
+                FROM bills 
+                WHERE customer_id = customers.id 
+                GROUP BY bills.id
+            ) AS rem
+        ),0) AS unpaid,
+        IFNULL((
+            SELECT SUM(bill_amount) 
+            FROM bills 
+            WHERE customer_id = customers.id
+        ),0) AS bill_amount
+    FROM customers
+    WHERE is_active = 1
+`;
+
+    let params = [];
+
+    
+    if (value && value.trim() !== "") {
+        sql_query += ` AND customers.name LIKE ?`;
+        params.push(`%${value}%`);
+    }
+
+  
+    sql_query += ` LIMIT ? OFFSET ?`;
+    params.push(limit, offset);
+
+   
+    const [result] = await connection.query(sql_query, params);
+
+  
+    let countQuery = `SELECT COUNT(*) as total FROM customers WHERE is_active = 1`;
+    let countParams = [];
+
+    if (value && value.trim() !== "") {
+        countQuery += ` AND customers.name LIKE ?`;
+        countParams.push(`%${value}%`);
+    }
+
+    const [res] = await connection.query(countQuery, countParams);
+
+    const response = {
+        customerList: result,
+        pageCount: Math.ceil(res[0].total / limit)
+    };
+    return response;
+
 }
 
-const getCustomerById = async(id , connection = db) =>{
+const getCustomerById = async (id, connection = db) => {
 
-    const [result] = await connection.query('select * from customers where id = ? And is_active = 1',[id]);
+    const [result] = await connection.query('select * from customers where id = ? And is_active = 1', [id]);
     return result[0];
 
 }
 
-const isEmailPresent = async (email,connection = db) => {
+const isEmailPresent = async (email, connection = db) => {
 
-    const [result] = await connection.query('select * from customers where email = ?',[email]);
-    if(result.length == 0) return false;
+    const [result] = await connection.query('select id from customers where email = ?', [email]);
+    if (result.length == 0) return false;
     return true;
+}
+
+const isEmailPresentExcept = async (email,customerId , connection = db) => {
+
+    const [result] = await connection.query('select id from customers where email = ? AND id != ?', [email,customerId]);
+    if (result.length == 0) return false;
+    return true;
+}
+
+
+const addCustomer = async (values, connection = db) => {
+
+    return await connection.query('INSERT INTO customers (name, gender, email, mobileno, address, city, state, pincode, gstnumber) VALUES (?)', [values]);
 
 }
 
-const addCustomers = async(values,connection = db) =>{
+const updateCustomer = async (values, connection = db) => {
 
-    return await connection.query('INSERT INTO customers (name, gender, email, mobileno, address, city, state, pincode, gstnumber) VALUES ?',[values]);
-    
+    return await connection.query('UPDATE customers SET name = ?,gender = ?,email = ?,mobileno = ?,address = ?,city = ?,state = ?,pincode = ?,gstnumber = ?,is_active = ? WHERE id = ?', values);
 }
 
-const updateCustomer = async(values,connection = db) =>{
-
-    return await connection.query('UPDATE customers SET name = ?,gender = ?,mobileno = ?,address = ?,city = ?,state = ?,pincode = ?,gstnumber = ?,is_active = ? WHERE id = ?',values);
-}
-
-const softRemoveCustomer = async(customerId , connection = db) =>{
+const softRemoveCustomer = async (customerId, connection = db) => {
 
     return await connection.query(`
         UPDATE customers 
@@ -71,14 +142,13 @@ const softRemoveCustomer = async(customerId , connection = db) =>{
 
 }
 
-const hardRemoveCustomer = async(customerId , connection = db)=>{
-    return await connection.query(`delete from customers where id = ?`,[customerId]);
+const hardRemoveCustomer = async (customerId, connection = db) => {
+    return await connection.query(`delete from customers where id = ?`, [customerId]);
 
 }
 
-const activateCustomer = async(inActiveCustomerId, connection = db) =>
-{
-     return await connection.query(`
+const activateCustomer = async (inActiveCustomerId, connection = db) => {
+    return await connection.query(`
         UPDATE customers 
         SET updated_at = NOW(), is_active = 1 
         WHERE id = ?
@@ -90,11 +160,12 @@ module.exports = {
     getCustomers,
     getCustomerById,
     getCustomersWithPaymentInfo,
-    addCustomers,
+    addCustomer,
     softRemoveCustomer,
     updateCustomer,
     isEmailPresent,
-    getAciveCustomers,
+    isEmailPresentExcept,
+    getActiveCustomers,
     getInActiveCustomers,
     activateCustomer,
     hardRemoveCustomer

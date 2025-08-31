@@ -4,7 +4,7 @@ const customerModel = require('../model/customer');
 const billModel = require('../model/bill')
 const { getAppErrorResult, getInternalErrorResult } = require('../util/util');
 
-const addCustomers = async (customerList) =>{
+const addCustomer = async (customer) =>{
 
     let connection ;
     try
@@ -12,19 +12,18 @@ const addCustomers = async (customerList) =>{
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-                for( const customer of customerList)
-                {
-                    if(customer.email !== process.env.ADMIN_GMAIL)
-                    {
-                        const emailExists = await customerModel.isEmailPresent(customer.email,connection);
-                        if(emailExists)
-                        {
-                            throw new AppError(`Email ${customer.email} already exists!`,'EMAIL_EXIST',409); 
-                        }
-                    }
-                }
+            
+        if(customer.email !== process.env.ADMIN_GMAIL)
+        {
+            const emailExists = await customerModel.isEmailPresent(customer.email,connection);
+            if(emailExists)
+            {
+                    throw new AppError(`Email already exists!`,'DUPLICATE_EMAIL',409); 
+            }
+        }
+                
 
-        const values = customerList.map((customer) => [
+        const values =  [
             customer.name,
             customer.gender,
             customer.email,
@@ -34,9 +33,9 @@ const addCustomers = async (customerList) =>{
             customer.state,
             customer.pincode,
             customer.gstnumber || null,
-        ]);
+        ];
 
-        await customerModel.addCustomers(values,connection);
+        await customerModel.addCustomer(values,connection);
         await connection.commit();
         return {success:true};
     }
@@ -64,6 +63,7 @@ const updateCustomer = async(customer,customerId) => {
         const values =  [
       customer.name,
       customer.gender,
+      customer.email,
       customer.mobileno,
       customer.address,
       customer.city,
@@ -73,6 +73,12 @@ const updateCustomer = async(customer,customerId) => {
       customer.is_active,
       customerId
     ]
+    const isPresent = await customerModel.isEmailPresentExcept(customer.email,customerId,connection);
+    if(customer.email !== process.env.ADMIN_GMAIL && isPresent)
+    {
+            throw new AppError("This mail is already taken! Select new one!",'DUPLICATE_MAIL',400);
+    }
+
         await customerModel.updateCustomer(values,connection);
         await connection.commit();
         return { success:true};
@@ -81,6 +87,8 @@ const updateCustomer = async(customer,customerId) => {
     {
         if(connection) { await connection.rollback();}
         console.log(err);
+        if(err instanceof AppError)
+            return getAppErrorResult(err);
         return getInternalErrorResult();
     }
      finally {
@@ -132,10 +140,10 @@ const activateCustomer = async (inActiveCustomerId) =>{
     }
 }
 
-const getActiveCustomers = async()=>{
+const getActiveCustomers = async(value)=>{
     try{
 
-        const data =  await customerModel.getAciveCustomers();
+        const data =  await customerModel.getActiveCustomers(value.trim());
         return { success:true , data};
 
     }
@@ -146,9 +154,11 @@ const getActiveCustomers = async()=>{
     }
 }
 
-const getActiveCustomersWithPaymentInfo = async () =>{
+
+
+const getActiveCustomersWithPaymentInfo = async (limit,offset,value) =>{
     try {
-        const data =  await customerModel.getCustomersWithPaymentInfo();
+        const data =  await customerModel.getCustomersWithPaymentInfo(limit,offset,value);
         return {success : true, data};
     }
     catch(err)
@@ -173,9 +183,9 @@ const getInActiveCustomers = async()=>{
     }
 }
 
-const getAllCustomers = async ()=>{
+const getCustomers = async (value)=>{
     try{
-        const data =  await customerModel.getCustomers();
+        const data =  await customerModel.getCustomers(value.trim());
         return { success:true, data};
 
     }
@@ -205,14 +215,14 @@ const isEmailExists = async(email)=>{
 
 
 module.exports = {
-    addCustomers,
+    addCustomer,
     updateCustomer,
     removeCustomer,
     activateCustomer,
     getActiveCustomers,
     getActiveCustomersWithPaymentInfo,
     getInActiveCustomers,
-    getAllCustomers,
+    getCustomers,
     isEmailExists
 
 }

@@ -26,13 +26,27 @@ const activateProduct = async( productId , connection = db ) => {
 
 }
 
-const getActiveProducts = async(connection = db) =>{
-    const[result] = await connection.query('select * from products where is_active = true');
+const getActiveProducts = async(value,connection = db) =>{
+    let sql_query = 'select * from products where is_active = 1 ';
+    const p = [];
+    if(value && value !== "")
+            {
+                sql_query += "AND name LIKE ?"
+                p.push(`%${value}%`)
+            }
+    const[result] = await connection.query(sql_query,p);
     return result;
 }
 
-const getInActiveProducts = async ( connection = db) => {
-    const [result] = await connection.query('select * from products where is_active = false');
+const getInActiveProducts = async (value, connection = db) => {
+    let sql_query = 'select * from products where is_active = 0 ';
+    const p = [];
+    if(value && value !== "")
+            {
+                sql_query += "AND name LIKE ?"
+                p.push(`%${value}%`)
+            }
+    const[result] = await connection.query(sql_query,p);
     return result;
 }
 

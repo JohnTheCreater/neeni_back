@@ -8,7 +8,12 @@ const getSales = async(connection = db)=>{
 }
 
 const getSalesByBillNumber = async (billNumber , connection = db) => {
-    const [result] = await connection.query('select * from sales where bill_no = ?',[billNumber]);
+    let sql_query = `select sales.id,sales.pid,sales.quantity,sales.bill_no,
+        sales.paid_status,sales.price,sales.sub_total,products.name
+     from sales 
+     LEFT join products ON sales.pid = products.id
+      where sales.bill_no = ?`
+    const [result] = await connection.query(sql_query,[billNumber]);
     return result;
 }
 

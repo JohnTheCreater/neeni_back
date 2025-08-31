@@ -46,7 +46,10 @@ const getProducts = async(req,res) => {
 
 const getActiveProducts = async (req,res) => {
 
-    const result = await productService.getActiveProducts();
+    const value = (req.query.value || "").trim();
+    console.log(value);
+
+    const result = await productService.getActiveProducts(value.trim());
 
     if(result.success) return res.status(200).json(result.data);
 
@@ -56,8 +59,8 @@ const getActiveProducts = async (req,res) => {
 
 const getInActiveProducts = async (req,res) => {
 
-    
-    const result = await productService.getInActiveProducts();
+    const value = (req.query.value || "").trim();
+    const result = await productService.getInActiveProducts(value.trim());
 
     if(result.success) return res.status(200).json(result.data);
 

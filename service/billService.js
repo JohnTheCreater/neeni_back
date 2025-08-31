@@ -274,7 +274,9 @@ const removeBill = async(billNumber) => {
 const generateBillPdf = async (billNumber) => {
 
     try {
-        const bill = await billModel.getBillById(billNumber);
+                console.log(Number(billNumber))
+        const bill = await billModel.getBillById(Number(billNumber));
+        console.log(bill.id);
         const invoice = await getInvoice(bill);
         const doc = await createInvoice(invoice);
         const filePath = path.join(__dirname, "../", "invoice.pdf");
@@ -341,6 +343,7 @@ const getInvoice = async (bill) => {
 const sendBill = async(billNumber) => {
 
     try {
+        console.log(billNumber)
     const bill = await billModel.getBillById(billNumber);
 
     const invoice = await getInvoice(bill);
@@ -497,10 +500,10 @@ const getBills = async()=>{
     }
 }
 
-const getBillsByCustomerId = async(customerId)=>{
-    console.log(customerId);
-    try{
-        const data = await billModel.getBillsByCustomerId(customerId);
+
+const getActiveBills = async()=>{
+     try{
+        const data = await billModel.getActiveBills();
         return {success:true,data};
     }
     catch(err)
@@ -511,19 +514,58 @@ const getBillsByCustomerId = async(customerId)=>{
 
 }
 
-const getPaymentInfoForMonth = async(date)=>{
-    try{
-
-        const data = await billModel.getPaymentInfoForMonth(date);
+const getActiveBillsPage = async(limit,offset,value)=>{
+     try{
+        const data = await billModel.getActiveBillsPage(limit,offset,value);
         return {success:true,data};
     }
     catch(err)
     {
         console.log(err);
         return getInternalErrorResult();
+    }
 
+}
+
+const getBillsInRange = async(startDate,endDate,limit,offset,shopId)=>{
+
+     try{
+        const data = await billModel.getBillsInRange(startDate,endDate,shopId,limit,offset);
+        return {success:true,data};
+    }
+    catch(err)
+    {
+        console.log(err);
+        return getInternalErrorResult();
+    }
+
+}
+
+const getBillsByCustomerIdPage = async(customerId,limit,offset)=>{
+    try{
+        const data = await billModel.getBillsByCustomerIdPage(customerId,limit,offset);
+        return {success:true,data};
+    }
+    catch(err)
+    {
+        console.log(err);
+        return getInternalErrorResult();
+    }
+
+}
+
+const getBillByBillNumber = async(billNumber) => {
+     try{
+        const data = await billModel.getBillById(billNumber);
+        return {success:true,data};
+    }
+    catch(err)
+    {
+        console.log(err);
+        return getInternalErrorResult();
     }
 }
+
 
 
 module.exports = {
@@ -535,7 +577,10 @@ module.exports = {
     sendNotification,
     getNextBillNumber,
     getBills,
-    getBillsByCustomerId,
-    getPaymentInfoForMonth
+    getActiveBills,
+    getActiveBillsPage,
+    getBillByBillNumber,
+    getBillsByCustomerIdPage,
+   getBillsInRange,
 }
 
