@@ -1,4 +1,4 @@
-const { verifyAccessToken } = require('../service/authService');
+const { verifyAccessToken } = require('../modules/auth/authService');
 
 const authenticateToken = (req, res, next) => {
     const token = req.cookies.accessToken;

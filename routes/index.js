@@ -2,16 +2,16 @@ const express = require('express');
 const route = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 
-const adminRoutes = require('./adminRoutes');
-const authRoutes = require('./authRoutes');
-const billRoutes = require('./billRoutes');
-const customerRoutes = require('./customerRoutes');
-const logRoutes = require('./logRoutes');
-const productionRoutes = require('./productionRoutes');
-const productRoutes = require('./productRoutes');
-const salesRoutes = require('./salesRoutes');
-const stockRoutes = require('./stockRoutes');
-const coreRoutes = require('./coreRoutes');
+const adminRoutes = require('../modules/admin/adminRoutes');
+const authRoutes = require('../modules/auth/authRoutes');
+const billRoutes = require('../modules/bill/billRoutes');
+const customerRoutes = require('../modules/customers/customerRoutes');
+const logRoutes = require('../modules/logs/logRoutes');
+const productionRoutes = require('../modules/production/productionRoutes');
+const productRoutes = require('../modules/products/productRoutes');
+const salesRoutes = require('../modules/sales/salesRoutes');
+const stockRoutes = require('../modules/stock/stockRoutes');
+const coreRoutes = require('../modules/core/coreRoutes');
 
 route.use('/auth', authRoutes);
 
