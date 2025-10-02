@@ -52,14 +52,14 @@ const getCustomersWithPaymentInfo = async (limit, offset, value, connection = db
                               AND paid_status = "paid"
                          ),0) AS remaining_amount
                 FROM bills 
-                WHERE customer_id = customers.id 
+                WHERE customer_id = customers.id AND bills.is_active = 1
                 GROUP BY bills.id
             ) AS rem
         ),0) AS unpaid,
         IFNULL((
             SELECT SUM(bill_amount) 
             FROM bills 
-            WHERE customer_id = customers.id
+            WHERE customer_id = customers.id AND bills.is_active = 1
         ),0) AS bill_amount
     FROM customers
     WHERE is_active = 1
